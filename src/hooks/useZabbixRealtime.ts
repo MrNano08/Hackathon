@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { classifyAlerts } from '../helpers/alertClassifier'
+import { enrichAlertsWithGemini } from '../services/geminiService'
 import { enrichProblemsWithHosts } from '../helpers/zabbixMappers'
 import {
   checkZabbixConnection,
@@ -130,9 +131,12 @@ export function useZabbixRealtime(): UseZabbixRealtimeResult {
         loadedItemsByHost = {}
       }
 
-      const classifiedAlerts = classifyAlerts(
+      const locallyClassifiedAlerts = classifyAlerts(
         enrichedProblems,
         loadedItemsByHost,
+      )
+      const classifiedAlerts = await enrichAlertsWithGemini(
+        locallyClassifiedAlerts,
       )
 
       if (!isMountedRef.current) {

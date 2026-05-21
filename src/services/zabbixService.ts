@@ -20,19 +20,106 @@ import {
 
 export const ZABBIX_REAL_ENDPOINT =
   'http://172.28.20.190/zabbix/api_jsonrpc.php'
+
 export const ZABBIX_CONNECTION_ERROR =
-  'No se pudo conectar con Zabbix. Verifique que la VPN Hackathon-UNA est\u00e9 conectada, que el token sea v\u00e1lido y que la URL de la API est\u00e9 disponible.'
+  'No se pudo conectar con Zabbix. Verifique que la VPN esté conectada, que el token sea válido y que la URL de la API esté disponible.'
+
 export const ZABBIX_DASHBOARD_CONNECTION_ERROR =
-  'No se pudo conectar con Zabbix. Verifique que la VPN Hackathon-UNA est\u00e9 conectada, que el token sea v\u00e1lido y que el endpoint http://172.28.20.190/zabbix/api_jsonrpc.php est\u00e9 accesible.'
+  'No se pudo conectar con Zabbix. Verifique que la VPN esté conectada, que el token sea válido y que el endpoint de Zabbix esté accesible.'
+
 export const ZABBIX_EMPTY_TOKEN_ERROR =
-  'Modo real activado, pero no existe VITE_ZABBIX_TOKEN. Pegue un token v\u00e1lido obtenido desde user.login.'
+  'Modo real activado, pero no existe VITE_ZABBIX_TOKEN. Pegue un token válido obtenido desde Zabbix.'
 
 const DEFAULT_REFRESH_SECONDS = 15
 const REQUEST_TIMEOUT_MS = 12000
+
 const configuredMode: ZabbixMode =
   import.meta.env.VITE_ZABBIX_MODE?.toLowerCase() === 'real' ? 'real' : 'mock'
+
 const zabbixApiUrl = import.meta.env.VITE_ZABBIX_API_URL?.trim() ?? ''
 const zabbixToken = import.meta.env.VITE_ZABBIX_TOKEN?.trim() ?? ''
+const useZabbixProxy = import.meta.env.VITE_USE_ZABBIX_PROXY === 'true'
+
+const debugEnabled = import.meta.env.VITE_ZABBIX_DEBUG === 'true'
+
+/**
+ * Modos:
+ * bearer => Authorization: Bearer TOKEN
+ * raw    => Authorization: TOKEN
+ * body   => "auth": "TOKEN" dentro del JSON-RPC
+ * both   => Authorization: Bearer TOKEN + auth en body
+ *
+ * Nota:
+ * Si VITE_USE_ZABBIX_PROXY=true, el header Authorization se inyecta desde vite.config.ts.
+ */
+const authMode =
+  import.meta.env.VITE_ZABBIX_AUTH_MODE?.toLowerCase() || 'bearer'
+
+export interface ZabbixDebugLog {
+  id: number
+  method: string
+  params: Record<string, unknown>
+  url: string
+  authMode: string
+  status?: number
+  ok?: boolean
+  requestBody: unknown
+  responseBody?: unknown
+  errorMessage?: string
+  errorData?: string
+  createdAt: string
+}
+
+interface ZabbixTriggerWithHosts {
+  triggerid: string
+  description?: string
+  expression?: string
+  priority?: string
+  hosts?: Array<{
+    hostid: string
+    host?: string
+    name?: string
+  }>
+}
+
+const debugLogs: ZabbixDebugLog[] = []
+
+function maskToken(value: string): string {
+  if (!value) return ''
+  if (value.length <= 12) return '***'
+  return `${value.slice(0, 6)}...${value.slice(-6)}`
+}
+
+function addDebugLog(log: ZabbixDebugLog) {
+  debugLogs.unshift(log)
+
+  if (debugLogs.length > 20) {
+    debugLogs.pop()
+  }
+
+  if (debugEnabled) {
+    console.groupCollapsed(
+      `%cZabbix Debug%c ${log.method}`,
+      'color:#0f766e;font-weight:bold;',
+      'color:inherit;',
+    )
+    console.log('URL:', log.url)
+    console.log('Auth:', log.authMode)
+    console.log('Request:', log.requestBody)
+    console.log('Response:', log.responseBody)
+    console.log('Error message:', log.errorMessage)
+    console.log('Error data:', log.errorData)
+    console.groupEnd()
+  }
+}
+
+export function getZabbixDebugLogs(): ZabbixDebugLog[] {
+  return [...debugLogs]
+}
+
+export function clearZabbixDebugLogs() {
+  debugLogs.length = 0
+}
 
 function getMockResult<T>(
   method: string,
@@ -47,7 +134,10 @@ function getMockResult<T>(
   }
 
   if (method === 'item.get') {
-    const hostid = String(params.hostids ?? '')
+    const hostid = Array.isArray(params.hostids)
+      ? String(params.hostids[0] ?? '')
+      : String(params.hostids ?? '')
+
     return getMockItemsByHost(hostid) as Promise<T>
   }
 
@@ -109,6 +199,79 @@ function assertRealModeConfig() {
   }
 }
 
+function shouldSendAuthInBody() {
+  return authMode === 'body' || authMode === 'both'
+}
+
+function shouldSendAuthInHeaderFromBrowser() {
+  if (useZabbixProxy) {
+    return false
+  }
+
+  return authMode === 'bearer' || authMode === 'raw' || authMode === 'both'
+}
+
+function buildZabbixRequestBody(
+  method: string,
+  params: Record<string, unknown>,
+  id: number,
+) {
+  const body: Record<string, unknown> = {
+    jsonrpc: '2.0',
+    method,
+    params,
+    id,
+  }
+
+  if (shouldSendAuthInBody()) {
+    body.auth = zabbixToken
+  }
+
+  return body
+}
+
+function buildHeaders() {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (shouldSendAuthInHeaderFromBrowser()) {
+    if (authMode === 'raw') {
+      headers.Authorization = zabbixToken
+    } else {
+      headers.Authorization = `Bearer ${zabbixToken}`
+    }
+  }
+
+  return headers
+}
+
+function sanitizeRequestForDebug(body: unknown) {
+  if (!body || typeof body !== 'object') return body
+
+  const copy = { ...(body as Record<string, unknown>) }
+
+  if (typeof copy.auth === 'string') {
+    copy.auth = maskToken(copy.auth)
+  }
+
+  return copy
+}
+
+function sanitizeHeadersForDebug(headers: Record<string, string>) {
+  const copy = { ...headers }
+
+  if (copy.Authorization) {
+    if (copy.Authorization.startsWith('Bearer ')) {
+      copy.Authorization = `Bearer ${maskToken(zabbixToken)}`
+    } else {
+      copy.Authorization = maskToken(zabbixToken)
+    }
+  }
+
+  return copy
+}
+
 export async function fetchZabbix<T>(
   method: string,
   params: Record<string, unknown>,
@@ -123,43 +286,125 @@ export async function fetchZabbix<T>(
   const controller = new AbortController()
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
+  const requestId = Date.now()
+  const requestBody = buildZabbixRequestBody(method, params, requestId)
+  const headers = buildHeaders()
+
+  const debugBase: ZabbixDebugLog = {
+    id: requestId,
+    method,
+    params,
+    url: zabbixApiUrl,
+    authMode: `${authMode} | proxy: ${
+      useZabbixProxy ? 'ON' : 'OFF'
+    } | browserHeaders: ${JSON.stringify(sanitizeHeadersForDebug(headers))}`,
+    requestBody: sanitizeRequestForDebug(requestBody),
+    createdAt: new Date().toISOString(),
+  }
+
   try {
     const response = await fetch(zabbixApiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${zabbixToken}`,
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method,
-        params,
-        id: Date.now(),
-      }),
+      headers,
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     })
 
+    const rawText = await response.text()
+
+    let payload: ZabbixApiResponse<T> | null = null
+
+    try {
+      payload = JSON.parse(rawText) as ZabbixApiResponse<T>
+    } catch {
+      addDebugLog({
+        ...debugBase,
+        status: response.status,
+        ok: response.ok,
+        responseBody: rawText,
+        errorMessage: 'Zabbix no devolvió JSON válido.',
+      })
+
+      throw new Error(
+        `Zabbix no devolvió JSON válido. HTTP ${response.status}. Respuesta: ${rawText.slice(
+          0,
+          300,
+        )}`,
+      )
+    }
+
     if (!response.ok) {
+      addDebugLog({
+        ...debugBase,
+        status: response.status,
+        ok: response.ok,
+        responseBody: payload,
+        errorMessage: `HTTP ${response.status}`,
+      })
+
       throw new Error(`${ZABBIX_CONNECTION_ERROR} HTTP ${response.status}.`)
     }
 
-    const payload = (await response.json()) as ZabbixApiResponse<T>
-
     if (!payload || payload.jsonrpc !== '2.0') {
-      throw new Error('Respuesta invalida de Zabbix.')
+      addDebugLog({
+        ...debugBase,
+        status: response.status,
+        ok: response.ok,
+        responseBody: payload,
+        errorMessage: 'Respuesta inválida de Zabbix.',
+      })
+
+      throw new Error('Respuesta inválida de Zabbix.')
     }
 
     if (payload.error) {
-      throw new Error(`Zabbix respondi\u00f3 con error: ${payload.error.message}`)
+      const errorMessage = payload.error.message || 'Error desconocido'
+      const errorData = payload.error.data || ''
+
+      addDebugLog({
+        ...debugBase,
+        status: response.status,
+        ok: response.ok,
+        responseBody: payload,
+        errorMessage,
+        errorData,
+      })
+
+      throw new Error(
+        `Zabbix respondió con error en ${method}: ${errorMessage}${
+          errorData ? ` | Detalle: ${errorData}` : ''
+        }`,
+      )
     }
 
     if (payload.result === undefined) {
-      throw new Error('Respuesta invalida de Zabbix: result vacio.')
+      addDebugLog({
+        ...debugBase,
+        status: response.status,
+        ok: response.ok,
+        responseBody: payload,
+        errorMessage: 'Respuesta inválida de Zabbix: result vacío.',
+      })
+
+      throw new Error('Respuesta inválida de Zabbix: result vacío.')
     }
+
+    addDebugLog({
+      ...debugBase,
+      status: response.status,
+      ok: response.ok,
+      responseBody: payload,
+    })
 
     return payload.result
   } catch (error) {
-    throw getRequestError(error)
+    const normalized = getRequestError(error)
+
+    if (debugEnabled) {
+      console.error('Zabbix request failed:', normalized)
+    }
+
+    throw normalized
   } finally {
     window.clearTimeout(timeoutId)
   }
@@ -175,7 +420,8 @@ export async function checkZabbixConnection(
   await fetchZabbix<ZabbixHost[]>(
     'host.get',
     {
-      output: ['hostid'],
+      output: 'extend',
+      selectInterfaces: 'extend',
       limit: 1,
     },
     mode,
@@ -190,8 +436,8 @@ export async function getHosts(
   const hosts = await fetchZabbix<ZabbixHost[]>(
     'host.get',
     {
-      output: ['hostid', 'name', 'status'],
-      selectInterfaces: ['ip'],
+      output: 'extend',
+      selectInterfaces: 'extend',
     },
     mode,
   )
@@ -206,13 +452,60 @@ export async function getProblems(
     'problem.get',
     {
       output: 'extend',
-      sortfield: ['eventid'],
+      selectTags: 'extend',
+      sortfield: 'eventid',
       sortorder: 'DESC',
+      recent: true,
+      limit: 50,
     },
     mode,
   )
 
-  return normalizeProblems(problems)
+  const triggerIds = Array.from(
+    new Set(
+      problems
+        .map((problem) => String(problem.objectid ?? ''))
+        .filter((objectid) => objectid.length > 0),
+    ),
+  )
+
+  if (triggerIds.length === 0) {
+    return normalizeProblems(problems)
+  }
+
+  try {
+    const triggers = await fetchZabbix<ZabbixTriggerWithHosts[]>(
+      'trigger.get',
+      {
+        output: ['triggerid', 'description', 'priority'],
+        triggerids: triggerIds,
+        selectHosts: ['hostid', 'host', 'name'],
+      },
+      mode,
+    )
+
+    const hostsByTriggerId = new Map(
+      triggers.map((trigger) => [String(trigger.triggerid), trigger.hosts ?? []]),
+    )
+
+    const enrichedProblems = problems.map((problem) => {
+      const triggerHosts = hostsByTriggerId.get(String(problem.objectid)) ?? []
+
+      return {
+        ...problem,
+        hosts: triggerHosts,
+      }
+    }) as ZabbixProblem[]
+
+    return normalizeProblems(enrichedProblems)
+  } catch (error) {
+    console.warn(
+      'No se pudieron enriquecer los problemas con trigger.get. Se muestran problemas sin host asociado.',
+      error,
+    )
+
+    return normalizeProblems(problems)
+  }
 }
 
 export async function getItemsByHost(
@@ -222,9 +515,10 @@ export async function getItemsByHost(
   const items = await fetchZabbix<ZabbixItem[]>(
     'item.get',
     {
-      output: ['itemid', 'name', 'key_', 'lastvalue', 'units'],
-      hostids: hostid,
+      output: 'extend',
+      hostids: [hostid],
       sortfield: 'name',
+      limit: 20,
     },
     mode,
   )
