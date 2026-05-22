@@ -52,11 +52,7 @@ export function DashboardNavigation({
   const items = showDebug
     ? [
         ...baseItems,
-        {
-          id: 'debug' as const,
-          label: 'Debug',
-          description: 'Llamadas JSON-RPC',
-        },
+
       ]
     : baseItems
 
