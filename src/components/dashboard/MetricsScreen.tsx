@@ -53,7 +53,6 @@ function parseMetricValue(value: string) {
 
 function formatMetricValue(metric: ZabbixItem) {
   const unit = metric.units ?? ''
-
   return `${metric.lastvalue}${unit}`
 }
 
@@ -340,13 +339,20 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 120px)',
-        maxHeight: 'calc(100vh - 120px)',
-        minHeight: 0,
-        overflow: 'hidden',
+        minHeight: 'auto',
+        height: 'auto',
+        maxHeight: 'none',
+        overflow: 'visible',
+        paddingBottom: '2rem',
       }}
     >
-      <div className="screen-heading" style={{ flexShrink: 0 }}>
+      <div
+        className="screen-heading"
+        style={{
+          flexShrink: 0,
+          marginBottom: '1rem',
+        }}
+      >
         <div>
           <p className="eyebrow">Métricas por host</p>
           <h2>Antes y después de interpretar item.get</h2>
@@ -386,17 +392,21 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
       </div>
 
       <div
-        className="metrics-scroll-container"
+        className="metrics-global-scroll-content"
         style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          paddingRight: '0.4rem',
+          height: 'auto',
+          maxHeight: 'none',
+          minHeight: 'auto',
+          overflow: 'visible',
           paddingBottom: '3rem',
         }}
       >
-        <div className="summary-grid embedded-note">
+        <div
+          className="summary-grid embedded-note"
+          style={{
+            marginBottom: '1rem',
+          }}
+        >
           <article className="summary-card">
             <span>Hosts analizados</span>
             <strong>{hostEntries.length}</strong>
@@ -431,6 +441,9 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
           <div
             className="preview-frame embedded-note"
             style={{
+              height: 'auto',
+              maxHeight: 'none',
+              minHeight: 'auto',
               overflow: 'visible',
             }}
           >
@@ -475,15 +488,18 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
               className="preview-content metrics-preview-content"
               style={{
                 height: 'auto',
-                minHeight: 'unset',
+                maxHeight: 'none',
+                minHeight: 'auto',
                 overflow: 'visible',
-                padding: '18px',
+                padding: '20px',
               }}
             >
               {isBefore ? (
                 <div
                   className="host-metrics-grid"
                   style={{
+                    height: 'auto',
+                    maxHeight: 'none',
                     gridAutoRows: 'auto',
                     alignItems: 'start',
                     overflow: 'visible',
@@ -495,6 +511,7 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                       key={hostId}
                       style={{
                         height: 'auto',
+                        maxHeight: 'none',
                         overflow: 'visible',
                       }}
                     >
@@ -523,6 +540,8 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                 <div
                   className="host-metrics-grid"
                   style={{
+                    height: 'auto',
+                    maxHeight: 'none',
                     gridAutoRows: 'auto',
                     alignItems: 'start',
                     overflow: 'visible',
@@ -534,6 +553,7 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                       key={host.hostId}
                       style={{
                         height: 'auto',
+                        maxHeight: 'none',
                         overflow: 'visible',
                       }}
                     >
