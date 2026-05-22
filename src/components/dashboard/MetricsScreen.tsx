@@ -501,7 +501,7 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                     height: 'auto',
                     maxHeight: 'none',
                     gridAutoRows: 'auto',
-                    alignItems: 'start',
+                    alignItems: 'stretch',
                     overflow: 'visible',
                   }}
                 >
@@ -510,7 +510,7 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                       className="host-metric-card"
                       key={hostId}
                       style={{
-                        height: 'auto',
+                        height: '100%',
                         maxHeight: 'none',
                         overflow: 'visible',
                       }}
@@ -523,9 +523,27 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                       {metrics.length === 0 ? (
                         <p>No hay métricas disponibles para este host.</p>
                       ) : (
-                        <div className="metric-list">
+                        <div
+                          className="metric-list"
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                            gap: '0.85rem',
+                            alignItems: 'stretch',
+                          }}
+                        >
                           {metrics.map((metric) => (
-                            <div className="metric-pill" key={metric.itemid}>
+                            <div
+                              className="metric-pill"
+                              key={metric.itemid}
+                              style={{
+                                minHeight: '132px',
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'flex-start',
+                              }}
+                            >
                               <span>{metric.name}</span>
                               <strong>{formatMetricValue(metric)}</strong>
                               <p>{metric.key_}</p>
@@ -543,7 +561,7 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                     height: 'auto',
                     maxHeight: 'none',
                     gridAutoRows: 'auto',
-                    alignItems: 'start',
+                    alignItems: 'stretch',
                     overflow: 'visible',
                   }}
                 >
@@ -552,7 +570,7 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                       className="host-metric-card"
                       key={host.hostId}
                       style={{
-                        height: 'auto',
+                        height: '100%',
                         maxHeight: 'none',
                         overflow: 'visible',
                       }}
@@ -562,18 +580,53 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                         <strong>Host {host.hostId}</strong>
                       </div>
 
-                      <div className="metric-list">
-                        <div className="metric-pill">
+                      <div
+                        className="metric-list"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                          gap: '0.85rem',
+                          alignItems: 'stretch',
+                        }}
+                      >
+                        <div
+                          className="metric-pill"
+                          style={{
+                            minHeight: '108px',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                          }}
+                        >
                           <span>Críticas</span>
                           <strong>{host.criticalCount}</strong>
                         </div>
 
-                        <div className="metric-pill">
+                        <div
+                          className="metric-pill"
+                          style={{
+                            minHeight: '108px',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                          }}
+                        >
                           <span>Atención</span>
                           <strong>{host.warningCount}</strong>
                         </div>
 
-                        <div className="metric-pill">
+                        <div
+                          className="metric-pill"
+                          style={{
+                            minHeight: '108px',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                          }}
+                        >
                           <span>Normales</span>
                           <strong>{host.okCount}</strong>
                         </div>
@@ -584,13 +637,45 @@ export function MetricsScreen({ itemsByHost }: MetricsScreenProps) {
                         <p>{host.mainAction}</p>
                       </div>
 
-                      <div className="metric-list embedded-note">
+                      <div
+                        className="metric-list embedded-note"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                          gap: '0.85rem',
+                          alignItems: 'stretch',
+                        }}
+                      >
                         {host.metrics.map((metric) => (
-                          <div className="metric-pill" key={metric.item.itemid}>
+                          <div
+                            className="metric-pill"
+                            key={metric.item.itemid}
+                            style={{
+                              minHeight: '190px',
+                              height: '100%',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'flex-start',
+                            }}
+                          >
                             <span>{metric.group}</span>
                             <strong>{metric.value}</strong>
-                            <p>{metric.explanation}</p>
-                            <span className={statusClass[metric.status]}>
+
+                            <p
+                              style={{
+                                flex: 1,
+                              }}
+                            >
+                              {metric.explanation}
+                            </p>
+
+                            <span
+                              className={statusClass[metric.status]}
+                              style={{
+                                marginTop: 'auto',
+                                alignSelf: 'flex-start',
+                              }}
+                            >
                               {metric.statusLabel}
                             </span>
                           </div>
