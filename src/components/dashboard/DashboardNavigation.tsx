@@ -27,13 +27,12 @@ const baseItems: Array<{
     label: 'Antes / Después',
     description: 'Comparador de análisis',
   },
-
   {
     id: 'detalle',
     label: 'Detalle',
     description: 'Alerta seleccionada',
   },
-    {
+  {
     id: 'visuales',
     label: 'Visuales',
     description: 'Métricas gráficas',
@@ -43,7 +42,6 @@ const baseItems: Array<{
     label: 'Métricas',
     description: 'Datos por host',
   },
-
 ]
 
 export function DashboardNavigation({
@@ -71,6 +69,8 @@ export function DashboardNavigation({
           }`}
           key={item.id}
           type="button"
+          aria-current={activeScreen === item.id ? 'page' : undefined}
+          aria-pressed={activeScreen === item.id}
           onClick={() => onChangeScreen(item.id)}
         >
           <span>{item.label}</span>

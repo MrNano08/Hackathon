@@ -1,0 +1,130 @@
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.992);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 18%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, currentColor 8%, transparent);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes header-scan {
+  from {
+    transform: translateX(-2%);
+  }
+
+  to {
+    transform: translateX(2%);
+  }
+}
+
+@keyframes segment-glow {
+  0%,
+  100% {
+    filter: saturate(1);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+  }
+
+  50% {
+    filter: saturate(1.16) brightness(1.04);
+    box-shadow: 0 14px 28px rgba(8, 145, 178, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-header::after {
+    animation: header-scan 8s var(--ease-out) infinite alternate;
+  }
+
+  .dashboard-header,
+  .dashboard-navigation,
+  .screen-card,
+  .state-panel,
+  .error-panel,
+  .debug-panel {
+    animation: fade-up var(--motion-slow) var(--ease-out) both;
+  }
+
+  .summary-card,
+  .visual-kpi-card,
+  .visual-panel,
+  .host-metric-card,
+  .detail-grid > div,
+  .metric-pill,
+  .top-alert-item,
+  .debug-log-card {
+    animation: fade-up 440ms var(--ease-out) both;
+  }
+
+  .status-dot {
+    animation: pulse-ring 1.8s ease-in-out infinite;
+  }
+
+  .visual-bar-fill {
+    transform-origin: left center;
+    animation: bar-grow 680ms var(--ease-out) both;
+  }
+
+  .compare-toggle::before {
+    animation: segment-glow 2.8s ease-in-out infinite;
+  }
+
+  .summary-card:nth-child(2),
+  .visual-kpi-card:nth-child(2),
+  .visual-panel:nth-child(2) {
+    animation-delay: 0.04s;
+  }
+
+  .summary-card:nth-child(3),
+  .visual-kpi-card:nth-child(3),
+  .visual-panel:nth-child(3) {
+    animation-delay: 0.08s;
+  }
+
+  .summary-card:nth-child(4),
+  .visual-kpi-card:nth-child(4),
+  .visual-panel:nth-child(4) {
+    animation-delay: 0.12s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

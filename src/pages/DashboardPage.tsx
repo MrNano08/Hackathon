@@ -68,13 +68,14 @@ export function DashboardPage() {
     }
 
     if (activeScreen === 'visuales') {
-  return (
-    <VisualMetricsScreen
-      problems={problems}
-      alerts={prioritizedAlerts}
-    />
-  )
-}
+      return (
+        <VisualMetricsScreen
+          problems={problems}
+          alerts={prioritizedAlerts}
+        />
+      )
+    }
+
     if (activeScreen === 'detalle') {
       return <AlertDetailScreen selectedAlert={selectedAlert} />
     }

@@ -1,0 +1,101 @@
+@media (max-width: 1180px) {
+  .dashboard-header {
+    grid-template-columns: 1fr;
+  }
+
+  .header-copy h1 {
+    font-size: 2.45rem;
+  }
+
+  .dashboard-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .header-actions {
+    min-width: 0;
+  }
+
+  .summary-grid,
+  .detail-grid,
+  .metric-list,
+  .raw-detail dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .screen-heading {
+    align-items: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-shell {
+    padding: 14px;
+  }
+
+  .dashboard-header,
+  .screen-card,
+  .detail-panel,
+  .metrics-section,
+  .predictive-note,
+  .debug-panel,
+  .error-panel {
+    border-radius: 14px;
+  }
+
+  .dashboard-header,
+  .screen-card {
+    padding: 20px;
+  }
+
+  .header-copy h1 {
+    font-size: 1.85rem;
+  }
+
+  .summary-grid,
+  .detail-grid,
+  .metric-list,
+  .host-metric-card .metric-list,
+  .raw-detail dl {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .screen-heading,
+  .preview-toolbar,
+  .detail-header,
+  .state-panel,
+  .error-panel,
+  .error-actions,
+  .debug-panel-header,
+  .debug-log-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .compare-toggle {
+    width: 100%;
+  }
+
+  .analysis-preview-card .preview-content {
+    height: clamp(340px, 60vh, 560px);
+  }
+
+  .compare-button {
+    flex: 1;
+  }
+
+  .detail-badges,
+  .debug-actions {
+    justify-content: start;
+  }
+}
+
+@media (max-width: 360px) {
+  .dashboard-navigation {
+    grid-template-columns: 1fr;
+  }
+}
+

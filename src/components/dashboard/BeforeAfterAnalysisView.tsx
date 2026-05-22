@@ -35,7 +35,12 @@ export function BeforeAfterAnalysisView({
           </p>
         </div>
 
-        <div className="compare-toggle" aria-label="Cambiar vista de análisis">
+        <div
+          className={`compare-toggle ${
+            isBefore ? 'compare-toggle-before' : 'compare-toggle-after'
+          }`}
+          aria-label="Cambiar vista de análisis"
+        >
           <button
             className={
               isBefore
