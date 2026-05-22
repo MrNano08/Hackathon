@@ -70,9 +70,9 @@ function DonutChart({ data }: { data: MetricCount[] }) {
     total === 0
       ? '#e5ecee'
       : `conic-gradient(
-          #0f766e 0deg ${firstEnd}deg,
-          #245fa8 ${firstEnd}deg ${secondEnd}deg,
-          #b42335 ${secondEnd}deg 360deg
+          var(--brand) 0deg ${firstEnd}deg,
+          var(--accent-blue) ${firstEnd}deg ${secondEnd}deg,
+          var(--danger) ${secondEnd}deg 360deg
         )`
 
   return (

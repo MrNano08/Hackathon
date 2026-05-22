@@ -24,6 +24,12 @@ type GeneratedHost = {
   device: DeviceProfile
 }
 
+type DemoProblemScenario = {
+  name: string
+  severity: string
+  opdata: string
+}
+
 const coopeLocations: CoopeLocation[] = [
   {
     name: 'Oficinas Centrales Santa Cruz',
@@ -161,6 +167,91 @@ const generatedHosts: GeneratedHost[] = coopeLocations.flatMap(
     }),
 )
 
+const preventiveDemoScenarios: DemoProblemScenario[] = [
+  {
+    name: 'Preventive power supply inspection',
+    severity: '2',
+    opdata: 'Voltaje estable, se recomienda revision preventiva de fuente y cableado',
+  },
+  {
+    name: 'Temperature warning for preventive maintenance',
+    severity: '2',
+    opdata: 'Temperatura sobre rango ideal, sin caida del servicio',
+  },
+  {
+    name: 'Fan speed preventive warning',
+    severity: '2',
+    opdata: 'Ventilador con variacion de RPM, requiere limpieza preventiva',
+  },
+  {
+    name: 'Capacity preventive threshold warning',
+    severity: '3',
+    opdata: 'Capacidad cercana al umbral operativo, revisar crecimiento de uso',
+  },
+]
+
+const predictiveDemoScenarios: DemoProblemScenario[] = [
+  {
+    name: 'Traffic pattern growth detected',
+    severity: '3',
+    opdata: 'Tendencia historica de trafico acumulado durante varias mediciones',
+  },
+  {
+    name: 'Historic utilization trend rising',
+    severity: '3',
+    opdata: 'Patron repetido de consumo creciente sin interrupcion del servicio',
+  },
+  {
+    name: 'Recurring latency pattern observed',
+    severity: '2',
+    opdata: 'Recurrencia moderada de latencia en horarios similares',
+  },
+]
+
+function pickScenario(
+  scenarios: DemoProblemScenario[],
+  index: number,
+): DemoProblemScenario {
+  return scenarios[index % scenarios.length]
+}
+
+function getDemoMaintenanceScenario(
+  host: GeneratedHost,
+  index: number,
+): DemoProblemScenario | null {
+  const locationIndex = Math.floor(index / deviceProfiles.length)
+
+  if (host.device.code === 'SW') {
+    return pickScenario(preventiveDemoScenarios, locationIndex)
+  }
+
+  if (host.device.code === 'OLT') {
+    if (locationIndex % 3 === 0) {
+      return pickScenario(preventiveDemoScenarios, locationIndex + 1)
+    }
+
+    if (locationIndex % 3 === 2) {
+      return pickScenario(predictiveDemoScenarios, locationIndex)
+    }
+  }
+
+  if (host.device.code === 'IPTV') {
+    if (locationIndex % 3 === 1) {
+      return pickScenario(preventiveDemoScenarios, locationIndex + 2)
+    }
+
+    if (locationIndex % 3 === 0) {
+      return pickScenario(predictiveDemoScenarios, locationIndex + 1)
+    }
+  }
+
+  if (host.device.code === 'RTR' && locationIndex % 3 === 1) {
+    return pickScenario(predictiveDemoScenarios, locationIndex + 2)
+  }
+
+  return null
+}
+
 export const mockHosts: ZabbixHost[] = generatedHosts.map((host) => ({
   hostid: host.hostid,
   name: host.name,
@@ -172,6 +263,20 @@ function getProblemForHost(host: GeneratedHost, index: number): ZabbixProblem {
   const eventid = String(910000 + (generatedHosts.length - index))
   const clock = minutesAgo(6 + ((index * 7) % 720))
   const acknowledged = index % 7 === 0 ? '1' : '0'
+  const demoScenario = getDemoMaintenanceScenario(host, index)
+
+  if (demoScenario) {
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: `${demoScenario.name} - ${host.location.name}`,
+      severity: demoScenario.severity,
+      clock,
+      opdata: demoScenario.opdata,
+      acknowledged,
+    }
+  }
 
   if (host.location.name === 'Parque Solar Huacas') {
     const solarProblems = [
