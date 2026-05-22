@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react'
-import { AlertDetailPanel } from '../components/AlertDetailPanel'
 import { DashboardHeader } from '../components/DashboardHeader'
 import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
-import { PrioritizedAlertsTable } from '../components/PrioritizedAlertsTable'
-import { RawEventsTable } from '../components/RawEventsTable'
-import { SummaryCards } from '../components/SummaryCards'
 import { ZabbixDebugPanel } from '../components/ZabbixDebugPanel'
+import { AlertDetailScreen } from '../components/dashboard/AlertDetailScreen'
+import { BeforeAfterAnalysisView } from '../components/dashboard/BeforeAfterAnalysisView'
+import {
+  DashboardNavigation,
+  type DashboardScreen,
+} from '../components/dashboard/DashboardNavigation'
+import { MetricsScreen } from '../components/dashboard/MetricsScreen'
+import { OverviewScreen } from '../components/dashboard/OverviewScreen'
 import { useZabbixRealtime } from '../hooks/useZabbixRealtime'
 import { getZabbixApiUrl } from '../services/zabbixService'
+import { VisualMetricsScreen } from '../components/dashboard/VisualMetricsScreen'
 
 export function DashboardPage() {
   const {
@@ -26,6 +31,7 @@ export function DashboardPage() {
   } = useZabbixRealtime()
 
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
+  const [activeScreen, setActiveScreen] = useState<DashboardScreen>('resumen')
 
   const selectedAlert = useMemo(
     () =>
@@ -45,6 +51,52 @@ export function DashboardPage() {
     void refresh('mock')
   }
 
+  const handleSelectAlert = (eventid: string) => {
+    setSelectedAlertId(eventid)
+  }
+
+  const renderActiveScreen = () => {
+    if (activeScreen === 'analisis') {
+      return (
+        <BeforeAfterAnalysisView
+          problems={problems}
+          prioritizedAlerts={prioritizedAlerts}
+          selectedAlert={selectedAlert}
+          onSelectAlert={handleSelectAlert}
+        />
+      )
+    }
+
+    if (activeScreen === 'visuales') {
+  return (
+    <VisualMetricsScreen
+      problems={problems}
+      alerts={prioritizedAlerts}
+    />
+  )
+}
+    if (activeScreen === 'detalle') {
+      return <AlertDetailScreen selectedAlert={selectedAlert} />
+    }
+
+    if (activeScreen === 'metricas') {
+      return <MetricsScreen itemsByHost={itemsByHost} />
+    }
+
+    if (activeScreen === 'debug') {
+      return <ZabbixDebugPanel visible={mode === 'real'} />
+    }
+
+    return (
+      <OverviewScreen
+        hosts={hosts}
+        problems={problems}
+        alerts={prioritizedAlerts}
+        mode={mode}
+      />
+    )
+  }
+
   return (
     <main className="dashboard-shell">
       <DashboardHeader
@@ -59,101 +111,24 @@ export function DashboardPage() {
       />
 
       {error ? (
-        <>
-          <ErrorState
-            message={error}
-            onRetry={handleRefresh}
-            onUseDemo={mode === 'real' ? handleUseDemo : undefined}
-          />
-
-          <ZabbixDebugPanel visible={mode === 'real'} />
-        </>
+        <ErrorState
+          message={error}
+          onRetry={handleRefresh}
+          onUseDemo={mode === 'real' ? handleUseDemo : undefined}
+        />
       ) : null}
 
       {isInitialLoading ? (
         <LoadingState message="Consultando Zabbix en tiempo casi real..." />
       ) : (
         <>
-          <SummaryCards
-            hosts={hosts}
-            problems={problems}
-            alerts={prioritizedAlerts}
-            mode={mode}
+          <DashboardNavigation
+            activeScreen={activeScreen}
+            onChangeScreen={setActiveScreen}
+            showDebug={mode === 'real'}
           />
 
-          <section className="comparison-section">
-            <div className="section-heading">
-              <p className="eyebrow">Análisis operativo</p>
-              <h2>Antes y después del análisis</h2>
-            </div>
-
-            <div className="comparison-grid">
-              <section className="analysis-block">
-                <div className="block-heading">
-                  <span>ANTES</span>
-                  <h3>Antes: eventos técnicos sin priorizar</h3>
-                </div>
-
-                <p>
-                  Información original obtenida desde Zabbix mediante
-                  problem.get. Se muestra sin interpretación adicional para
-                  evidenciar el punto de partida técnico.
-                </p>
-
-                <RawEventsTable
-                  problems={problems}
-                  selectedEventId={selectedAlert?.eventid ?? null}
-                  onSelectProblem={setSelectedAlertId}
-                />
-              </section>
-
-              <section className="analysis-block analysis-block-strong">
-                <div className="block-heading">
-                  <span>DESPUÉS</span>
-                  <h3>Después: alertas priorizadas y explicadas</h3>
-                </div>
-
-                <p>
-                  Los mismos eventos reales se ordenan por prioridad y se
-                  enriquecen con categoría, explicación, mantenimiento sugerido
-                  y primera acción recomendada.
-                </p>
-
-                <PrioritizedAlertsTable
-                  alerts={prioritizedAlerts}
-                  selectedAlertId={selectedAlert?.eventid ?? null}
-                  onSelectAlert={setSelectedAlertId}
-                />
-              </section>
-            </div>
-          </section>
-
-          <section className="detail-section">
-            <AlertDetailPanel alert={selectedAlert} />
-          </section>
-
-          <section className="metrics-section">
-            <div>
-              <p className="eyebrow">Métricas por host</p>
-              <h2>Consulta item.get bajo demanda</h2>
-            </div>
-
-            <p>
-              El dashboard consulta item.get para hosts asociados a problemas
-              activos o una muestra operativa inicial. Hosts con métricas
-              cargadas: {Object.keys(itemsByHost).length}.
-            </p>
-          </section>
-
-          <section className="predictive-note">
-            <h2>Alcance del apoyo predictivo</h2>
-
-            <p>
-              El sistema identifica recurrencia, severidad y señales operativas
-              para apoyar mantenimiento preventivo, predictivo y correctivo. No
-              afirma predicción exacta de fallas.
-            </p>
-          </section>
+          {renderActiveScreen()}
         </>
       )}
     </main>

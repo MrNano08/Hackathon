@@ -3,210 +3,455 @@ import type { ZabbixHost, ZabbixItem, ZabbixProblem } from '../types/zabbix'
 const minutesAgo = (minutes: number) =>
   String(Math.floor(Date.now() / 1000) - minutes * 60)
 
-export const mockHosts: ZabbixHost[] = [
+type DeviceProfile = {
+  code: string
+  label: string
+  ipSegment: number
+}
+
+type CoopeLocation = {
+  name: string
+  canton: string
+  area: 'Energía' | 'Telecomunicaciones' | 'Comercial' | 'Generación'
+}
+
+type GeneratedHost = {
+  hostid: string
+  name: string
+  status: string
+  ip: string
+  location: CoopeLocation
+  device: DeviceProfile
+}
+
+const coopeLocations: CoopeLocation[] = [
   {
-    hostid: '10084',
-    name: 'Zabbix server',
-    status: '0',
-    interfaces: [{ ip: '127.0.0.1' }],
+    name: 'Oficinas Centrales Santa Cruz',
+    canton: 'Santa Cruz',
+    area: 'Energía',
   },
   {
-    hostid: '10654',
-    name: 'CG-Controller',
-    status: '0',
-    interfaces: [{ ip: '192.0.2.15' }],
+    name: 'Sucursal Santa Cruz',
+    canton: 'Santa Cruz',
+    area: 'Comercial',
   },
   {
-    hostid: '10661',
-    name: 'PLANTA DC CMTL',
-    status: '0',
-    interfaces: [{ ip: '192.0.2.21' }],
+    name: 'Sucursal Playas del Coco',
+    canton: 'Carrillo',
+    area: 'Comercial',
   },
   {
-    hostid: '10662',
-    name: 'PLANTA DC STRT',
-    status: '0',
-    interfaces: [{ ip: '192.0.2.22' }],
+    name: 'Sucursal Filadelfia',
+    canton: 'Carrillo',
+    area: 'Comercial',
   },
   {
-    hostid: '10663',
-    name: 'PLANTA HUACAS SUCURSAL',
-    status: '0',
-    interfaces: [{ ip: '192.0.2.23' }],
+    name: 'Sucursal Nicoya',
+    canton: 'Nicoya',
+    area: 'Comercial',
   },
   {
-    hostid: '10701',
-    name: 'CGR San Blas',
-    status: '0',
-    interfaces: [{ ip: '198.51.100.18' }],
+    name: 'Sucursal San Martín',
+    canton: 'Nicoya',
+    area: 'Comercial',
   },
   {
-    hostid: '10702',
-    name: 'CGR Nicoya Florida',
-    status: '0',
-    interfaces: [{ ip: '198.51.100.25' }],
+    name: 'Sucursal Hojancha',
+    canton: 'Hojancha',
+    area: 'Comercial',
   },
   {
-    hostid: '10703',
-    name: 'CGR Playas del Coco',
-    status: '1',
-    interfaces: [{ ip: '198.51.100.31' }],
+    name: 'Sucursal Carmona',
+    canton: 'Nandayure',
+    area: 'Comercial',
+  },
+  {
+    name: 'Sucursal Jicaral',
+    canton: 'Lepanto',
+    area: 'Comercial',
+  },
+  {
+    name: 'Sucursal Paquera',
+    canton: 'Paquera',
+    area: 'Comercial',
+  },
+  {
+    name: 'Tienda Nosara',
+    canton: 'Nosara',
+    area: 'Comercial',
+  },
+  {
+    name: 'ALSE Santa Cruz',
+    canton: 'Santa Cruz',
+    area: 'Comercial',
+  },
+  {
+    name: 'Parque Solar Huacas',
+    canton: 'Santa Cruz / Tamarindo',
+    area: 'Generación',
+  },
+  {
+    name: 'Telecom Fibra Santa Cruz',
+    canton: 'Santa Cruz',
+    area: 'Telecomunicaciones',
+  },
+  {
+    name: 'Telecom IPTV Nicoya',
+    canton: 'Nicoya',
+    area: 'Telecomunicaciones',
+  },
+  {
+    name: 'Telefonía IP Playas del Coco',
+    canton: 'Carrillo',
+    area: 'Telecomunicaciones',
+  },
+  {
+    name: 'Centro de Operaciones Eléctricas',
+    canton: 'Santa Cruz',
+    area: 'Energía',
+  },
+  {
+    name: 'Red Distribución Península',
+    canton: 'Península de Nicoya',
+    area: 'Energía',
   },
 ]
 
-export const mockProblems: ZabbixProblem[] = [
+const deviceProfiles: DeviceProfile[] = [
   {
-    eventid: '910006',
-    hostid: '10661',
-    hostName: 'PLANTA DC CMTL',
-    name: 'Cisco IOS: CGR1000 DC power supply: Power supply is in warning state',
-    severity: '2',
-    clock: minutesAgo(185),
-    opdata: 'Current state: warning (2)',
-    acknowledged: '0',
+    code: 'RTR',
+    label: 'Router principal',
+    ipSegment: 10,
   },
   {
-    eventid: '910005',
-    hostid: '10661',
-    hostName: 'PLANTA DC CMTL',
-    name: 'Cisco IOS: CGR1000 DC power supply: Power supply is in warning state',
-    severity: '2',
-    clock: minutesAgo(120),
-    opdata: 'Current state: warning (2)',
-    acknowledged: '0',
+    code: 'SW',
+    label: 'Switch de distribución',
+    ipSegment: 20,
   },
   {
-    eventid: '910004',
-    hostid: '10654',
-    hostName: 'CG-Controller',
-    name: 'ICMP loss is too high',
-    severity: '4',
-    clock: minutesAgo(92),
-    opdata: 'Packet loss: 100%',
-    acknowledged: '0',
+    code: 'OLT',
+    label: 'Nodo de fibra óptica',
+    ipSegment: 30,
   },
   {
-    eventid: '910003',
-    hostid: '10701',
-    hostName: 'CGR San Blas',
-    name: 'High CPU utilization',
-    severity: '3',
-    clock: minutesAgo(78),
-    opdata: 'CPU usage above threshold',
-    acknowledged: '1',
+    code: 'IPTV',
+    label: 'Servicio IPTV',
+    ipSegment: 40,
   },
   {
-    eventid: '910002',
-    hostid: '10703',
-    hostName: 'CGR Playas del Coco',
-    name: 'Interface link down',
-    severity: '5',
-    clock: minutesAgo(41),
-    opdata: 'Operational status: down',
-    acknowledged: '0',
-  },
-  {
-    eventid: '910001',
-    hostid: '10662',
-    hostName: 'PLANTA DC STRT',
-    name: 'Temperature warning',
-    severity: '2',
-    clock: minutesAgo(24),
-    opdata: 'Current state: warning',
-    acknowledged: '0',
-  },
-  {
-    eventid: '910000',
-    hostid: '10702',
-    hostName: 'CGR Nicoya Florida',
-    name: 'Memory usage is high',
-    severity: '3',
-    clock: minutesAgo(14),
-    opdata: 'Memory usage above threshold',
-    acknowledged: '0',
-  },
-  {
-    eventid: '909999',
-    hostid: '10654',
-    hostName: 'CG-Controller',
-    name: 'Unavailable by ICMP ping',
-    severity: '4',
-    clock: minutesAgo(8),
-    opdata: 'ICMP loss = 100%',
-    acknowledged: '0',
+    code: 'VoIP',
+    label: 'Telefonía IP',
+    ipSegment: 50,
   },
 ]
 
-export const mockItemsByHost: Record<string, ZabbixItem[]> = {
-  '10654': [
+const generatedHosts: GeneratedHost[] = coopeLocations.flatMap(
+  (location, locationIndex) =>
+    deviceProfiles.map((device, deviceIndex) => {
+      const numericId = 20001 + locationIndex * deviceProfiles.length + deviceIndex
+
+      return {
+        hostid: String(numericId),
+        name: `CG-${device.code}-${location.name}`,
+        status: numericId % 23 === 0 ? '1' : '0',
+        ip: `10.${20 + locationIndex}.${device.ipSegment}.${10 + deviceIndex}`,
+        location,
+        device,
+      }
+    }),
+)
+
+export const mockHosts: ZabbixHost[] = generatedHosts.map((host) => ({
+  hostid: host.hostid,
+  name: host.name,
+  status: host.status,
+  interfaces: [{ ip: host.ip }],
+}))
+
+function getProblemForHost(host: GeneratedHost, index: number): ZabbixProblem {
+  const eventid = String(910000 + (generatedHosts.length - index))
+  const clock = minutesAgo(6 + ((index * 7) % 720))
+  const acknowledged = index % 7 === 0 ? '1' : '0'
+
+  if (host.location.name === 'Parque Solar Huacas') {
+    const solarProblems = [
+      {
+        name: 'Inverter communication loss - Parque Solar Huacas',
+        severity: '4',
+        opdata: 'Inversor sin comunicación con SCADA',
+      },
+      {
+        name: 'High inverter temperature - Parque Solar Huacas',
+        severity: '3',
+        opdata: `Temperatura de inversor: ${66 + (index % 12)} C`,
+      },
+      {
+        name: 'Generation telemetry delay - Parque Solar Huacas',
+        severity: '2',
+        opdata: `Retraso de telemetría: ${4 + (index % 8)} min`,
+      },
+      {
+        name: 'DC string current imbalance - Parque Solar Huacas',
+        severity: '3',
+        opdata: `Desbalance de corriente DC: ${12 + (index % 9)}%`,
+      },
+      {
+        name: 'SCADA link latency - Parque Solar Huacas',
+        severity: '2',
+        opdata: `Latencia SCADA: ${180 + (index % 90)} ms`,
+      },
+    ]
+
+    const selected = solarProblems[index % solarProblems.length]
+
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: selected.name,
+      severity: selected.severity,
+      clock,
+      opdata: selected.opdata,
+      acknowledged,
+    }
+  }
+
+  if (host.device.code === 'OLT') {
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: `Low optical signal in fiber node - ${host.location.name}`,
+      severity: index % 4 === 0 ? '4' : '3',
+      clock,
+      opdata: `Potencia óptica RX promedio: -${22 + (index % 8)} dBm`,
+      acknowledged,
+    }
+  }
+
+  if (host.device.code === 'IPTV') {
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: `IPTV service degradation - ${host.location.name}`,
+      severity: index % 5 === 0 ? '4' : '3',
+      clock,
+      opdata: `Canales IPTV con pérdida de paquetes: ${8 + (index % 20)}%`,
+      acknowledged,
+    }
+  }
+
+  if (host.device.code === 'VoIP') {
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: `Telefonía IP jitter above threshold - ${host.location.name}`,
+      severity: index % 6 === 0 ? '3' : '2',
+      clock,
+      opdata: `Jitter promedio en llamadas IP: ${18 + (index % 45)} ms`,
+      acknowledged,
+    }
+  }
+
+  if (host.device.code === 'RTR') {
+    const isCritical = index % 9 === 0
+
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: isCritical
+        ? `Unavailable by ICMP ping - ${host.location.name}`
+        : `ICMP loss is too high - ${host.location.name}`,
+      severity: isCritical ? '5' : '4',
+      clock,
+      opdata: isCritical ? 'ICMP loss = 100%' : `Pérdida ICMP: ${35 + (index % 60)}%`,
+      acknowledged,
+    }
+  }
+
+  const switchProblem = index % 3
+
+  if (switchProblem === 0) {
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: `Interface uplink down - ${host.location.name}`,
+      severity: '5',
+      clock,
+      opdata: 'Estado operativo del enlace: down',
+      acknowledged,
+    }
+  }
+
+  if (switchProblem === 1) {
+    return {
+      eventid,
+      hostid: host.hostid,
+      hostName: host.name,
+      name: `High CPU utilization - ${host.location.name}`,
+      severity: '3',
+      clock,
+      opdata: `CPU sobre umbral: ${82 + (index % 15)}%`,
+      acknowledged,
+    }
+  }
+
+  return {
+    eventid,
+    hostid: host.hostid,
+    hostName: host.name,
+    name: `Temperature warning - ${host.location.name}`,
+    severity: '2',
+    clock,
+    opdata: `Temperatura actual: ${58 + (index % 18)} C`,
+    acknowledged,
+  }
+}
+
+export const mockProblems: ZabbixProblem[] = generatedHosts.map((host, index) =>
+  getProblemForHost(host, index),
+)
+
+function buildItemsForHost(host: GeneratedHost, index: number): ZabbixItem[] {
+  const baseItemId = 50000 + index * 10
+
+  const baseItems: ZabbixItem[] = [
     {
-      itemid: '40001',
-      hostid: '10654',
-      name: 'ICMP loss',
-      key_: 'icmppingloss',
-      lastvalue: '100',
-      units: '%',
+      itemid: String(baseItemId + 1),
+      hostid: host.hostid,
+      name: 'ICMP availability',
+      key_: 'icmpping',
+      lastvalue: index % 13 === 0 ? '0' : '1',
+      units: '',
     },
     {
-      itemid: '40002',
-      hostid: '10654',
+      itemid: String(baseItemId + 2),
+      hostid: host.hostid,
       name: 'ICMP response time',
       key_: 'icmppingsec',
-      lastvalue: '0',
+      lastvalue: (0.012 + (index % 20) * 0.004).toFixed(3),
       units: 's',
     },
-  ],
-  '10701': [
+  ]
+
+  if (host.device.code === 'RTR') {
+    return [
+      ...baseItems,
+      {
+        itemid: String(baseItemId + 3),
+        hostid: host.hostid,
+        name: 'CPU utilization',
+        key_: 'system.cpu.util',
+        lastvalue: String(45 + ((index * 3) % 52)),
+        units: '%',
+      },
+      {
+        itemid: String(baseItemId + 4),
+        hostid: host.hostid,
+        name: 'WAN bandwidth utilization',
+        key_: 'net.if.util[wan]',
+        lastvalue: String(50 + ((index * 5) % 49)),
+        units: '%',
+      },
+    ]
+  }
+
+  if (host.device.code === 'SW') {
+    return [
+      ...baseItems,
+      {
+        itemid: String(baseItemId + 3),
+        hostid: host.hostid,
+        name: 'Uplink operational status',
+        key_: 'net.if.status[uplink]',
+        lastvalue: index % 17 === 0 ? '2' : '1',
+        units: '',
+      },
+      {
+        itemid: String(baseItemId + 4),
+        hostid: host.hostid,
+        name: 'Switch temperature',
+        key_: 'sensor.temperature',
+        lastvalue: String(42 + ((index * 2) % 35)),
+        units: 'C',
+      },
+    ]
+  }
+
+  if (host.device.code === 'OLT') {
+    return [
+      ...baseItems,
+      {
+        itemid: String(baseItemId + 3),
+        hostid: host.hostid,
+        name: 'Optical RX power',
+        key_: 'net.optical.rx',
+        lastvalue: `-${18 + (index % 13)}`,
+        units: 'dBm',
+      },
+      {
+        itemid: String(baseItemId + 4),
+        hostid: host.hostid,
+        name: 'Active fiber clients',
+        key_: 'olt.clients.active',
+        lastvalue: String(80 + ((index * 7) % 520)),
+        units: '',
+      },
+    ]
+  }
+
+  if (host.device.code === 'IPTV') {
+    return [
+      ...baseItems,
+      {
+        itemid: String(baseItemId + 3),
+        hostid: host.hostid,
+        name: 'IPTV multicast loss',
+        key_: 'iptv.multicast.loss',
+        lastvalue: String((index * 3) % 18),
+        units: '%',
+      },
+      {
+        itemid: String(baseItemId + 4),
+        hostid: host.hostid,
+        name: 'IPTV stream latency',
+        key_: 'iptv.stream.latency',
+        lastvalue: String(30 + ((index * 4) % 160)),
+        units: 'ms',
+      },
+    ]
+  }
+
+  return [
+    ...baseItems,
     {
-      itemid: '40021',
-      hostid: '10701',
-      name: 'CPU utilization',
-      key_: 'system.cpu.util',
-      lastvalue: '91',
-      units: '%',
+      itemid: String(baseItemId + 3),
+      hostid: host.hostid,
+      name: 'VoIP jitter',
+      key_: 'voip.jitter',
+      lastvalue: String(5 + ((index * 2) % 55)),
+      units: 'ms',
     },
-  ],
-  '10702': [
     {
-      itemid: '40031',
-      hostid: '10702',
-      name: 'Memory utilization',
-      key_: 'vm.memory.util',
-      lastvalue: '87',
-      units: '%',
-    },
-  ],
-  '10661': [
-    {
-      itemid: '40041',
-      hostid: '10661',
-      name: 'DC power supply status',
-      key_: 'power.supply.status',
-      lastvalue: '2',
+      itemid: String(baseItemId + 4),
+      hostid: host.hostid,
+      name: 'SIP registration failures',
+      key_: 'voip.sip.failures',
+      lastvalue: String(index % 9),
       units: '',
     },
-  ],
-  '10662': [
-    {
-      itemid: '40051',
-      hostid: '10662',
-      name: 'Temperature',
-      key_: 'sensor.temperature',
-      lastvalue: '68',
-      units: 'C',
-    },
-  ],
-  '10703': [
-    {
-      itemid: '40061',
-      hostid: '10703',
-      name: 'Interface Gi0/1 operational status',
-      key_: 'net.if.status[Gi0/1]',
-      lastvalue: '2',
-      units: '',
-    },
-  ],
+  ]
 }
+
+export const mockItemsByHost: Record<string, ZabbixItem[]> =
+  generatedHosts.reduce<Record<string, ZabbixItem[]>>((acc, host, index) => {
+    acc[host.hostid] = buildItemsForHost(host, index)
+    return acc
+  }, {})
 
 export function getMockHosts(): Promise<ZabbixHost[]> {
   return Promise.resolve(mockHosts)
